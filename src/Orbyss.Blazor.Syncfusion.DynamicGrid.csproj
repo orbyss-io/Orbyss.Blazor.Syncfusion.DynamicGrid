@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+
+	<ItemGroup>
+		<SupportedPlatform Include="ios" />
+		<SupportedPlatform Include="android" />
+		<SupportedPlatform Include="windows" />
+		<SupportedPlatform Include="macOs" />
+	</ItemGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.18" />
+	  <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
+	  <PackageReference Include="Orbyss.Components.Json.Models" Version="1.0.1" />
+	  <PackageReference Include="Syncfusion.Blazor.Grid" Version="30.2.5" />	  
+  </ItemGroup>
+
+</Project>

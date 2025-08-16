@@ -1,0 +1,189 @@
+﻿@namespace Orbyss.SyncFusion.DynamicGrid.Internal
+@using Orbyss.Blazor.Syncfusion.DynamicGrid
+@using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
+@using Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
+@using Orbyss.Components.Json.Models
+
+<SfGrid TValue="JToken"
+        AllowPaging="@AllowPaging"
+        EnableVirtualization=@EnableVirtualization
+        AllowFiltering=@AllowFiltering
+        EnableVirtualMaskRow=@EnableVirtualMaskRow
+        AllowSorting="@AllowSorting"
+        Toolbar="@ToolbarItems"
+        @ref="GridRef">
+
+        @ChildContent
+
+</SfGrid>
+
+@code {
+    private SfGrid<JToken>? GridRef;
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public IEnumerable<ItemModel> ToolbarItems { get; set; } = [];
+
+    [Parameter]
+    public bool AllowPaging { get; set; }
+
+    [Parameter]
+    public bool EnableVirtualization { get; set; }
+
+    [Parameter]
+    public bool EnableVirtualMaskRow { get; set; }
+
+    [Parameter]
+    public bool AllowSorting { get; set; }
+
+    [Parameter]
+    public bool AllowFiltering { get; set; }
+
+    [CascadingParameter]
+    public DynamicColumn[] Columns { get; set; } = [];
+
+    [CascadingParameter]
+    public ITableTranslationContext? TableTranslationContext { get; set; }
+    
+    [CascadingParameter]
+    public string ActiveLanguage { get; set; } = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        foreach (var col in Columns)
+        {
+            if (col.IsEnumFilter)
+            {
+                var translatedEnums = TableTranslationContext?
+                    .TranslateEnum(ActiveLanguage, col.Scope)?
+                    .ToList()
+                    ?? [];
+
+                translatedEnums.Insert(0, new TranslatedEnumItem("", ""));
+
+                col.Template = rowToken =>
+                {
+                    return builder =>
+                    {
+                        var token = rowToken.SelectToken(col.Field, false);
+                        if (token is not null)
+                        {
+                            var translation = translatedEnums.FirstOrDefault(x => x.Value == $"{token}");
+                            builder.AddContent(0, new MarkupString($"{translation.Label}"));
+                        }
+                        else
+                        {
+                            builder.AddContent(0, new MarkupString($"VAL_ERR"));
+                        }
+                    };
+                };
+
+                if (!col.HasHeaderFilter)
+                {
+                    col.FilterTemplate = builder =>
+                    {
+                        builder.AddContent(0, new MarkupString());
+                    };
+                }
+                else if (col.EnumConfiguration!.MultiSelect)
+                {
+                    col.FilterTemplate = BuildMultiEnumFilterTemplate(col, translatedEnums);
+                }
+                else
+                {
+                    col.FilterTemplate = BuildSingleEnumFilterTemplate(col, translatedEnums);
+                }
+            }
+            else
+            {
+                col.Template = rowToken =>
+                {
+                    return builder =>
+                    {
+                        var columnText = ColumnTypeTextTranslator.StringifyColumn(                            
+                            col,
+                            rowToken
+                        );
+                        builder.AddContent(0, new MarkupString(columnText));
+                    };
+                };
+                if (!col.HasHeaderFilter)
+                {
+                    col.FilterTemplate = builder =>
+                    {
+                        builder.AddContent(0, new MarkupString());
+                    };
+                }
+            }
+        }
+    }
+
+
+    RenderFragment BuildMultiEnumFilterTemplate(DynamicColumn col, IEnumerable<TranslatedEnumItem> translatedEnums)
+    {
+        return builder =>
+        {
+            int seq = 0;
+            builder.OpenComponent(seq++, typeof(SfMultiSelect<List<string>, TranslatedEnumItem>));
+            builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<List<string>>(this, async e =>
+            {
+                if (e is null || e.Count == 0)
+                    await GridRef!.ClearFilteringAsync(col.Field);
+                else
+                {
+                    await GridRef!.FilterByColumnAsync(col.Field, "equal", e.ToArray());
+                }
+            }));
+
+            builder.AddAttribute(seq++, "DataSource", translatedEnums);
+            builder.AddAttribute(seq++, "Width", "100%");
+            builder.AddAttribute(seq++, "ShowClearButton", false);
+
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(fieldBuilder =>
+            {
+                fieldBuilder.OpenComponent<MultiSelectFieldSettings>(0);
+                fieldBuilder.AddAttribute(1, "Value", nameof(TranslatedEnumItem.Value));
+                fieldBuilder.AddAttribute(2, "Text", nameof(TranslatedEnumItem.Label));
+                fieldBuilder.CloseComponent();
+            }));
+
+
+            builder.CloseComponent();
+        };
+    }
+
+    RenderFragment BuildSingleEnumFilterTemplate(DynamicColumn col, IEnumerable<TranslatedEnumItem> translatedEnums)
+    {
+        return builder =>
+        {
+            int seq = 0;
+            builder.OpenComponent(seq++, typeof(SfDropDownList<string, TranslatedEnumItem>));
+            builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<string>(this, async e =>
+            {
+                if (string.IsNullOrWhiteSpace(e))
+                    await GridRef!.ClearFilteringAsync(col.Field);
+                else
+                {
+                    await GridRef!.FilterByColumnAsync(col.Field, "equal", e);
+                }
+            }));
+
+            builder.AddAttribute(seq++, "DataSource", translatedEnums);
+            builder.AddAttribute(seq++, "Width", "100%");
+            builder.AddAttribute(seq++, "ShowClearButton", false);
+
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(fieldBuilder =>
+            {
+                fieldBuilder.OpenComponent<DropDownListFieldSettings>(0);
+                fieldBuilder.AddAttribute(1, "Value", nameof(TranslatedEnumItem.Value));
+                fieldBuilder.AddAttribute(2, "Text", nameof(TranslatedEnumItem.Label));
+                fieldBuilder.CloseComponent();
+            }));
+
+
+            builder.CloseComponent();
+        };
+    }
+}

@@ -1,0 +1,173 @@
+﻿@using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
+@using Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
+@using Orbyss.Components.Json.Models
+
+<CascadingValue Value="@tableTranslationContext">    
+        <CascadingValue Value="@activeLanguage">
+            <DynamicSfGridContainer AllowPaging="@AllowPaging"
+                                                EnableVirtualization=@EnableVirtualization
+                                                AllowFiltering=true
+                                                EnableVirtualMaskRow=@EnableVirtualMaskRow
+                                                AllowSorting="true">
+
+                <SfDataManager AdaptorInstance="@(CustomDataAdaptorType)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+
+                @if (ToolbarItems.Any())
+                {
+                    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="JToken"></GridEvents>
+                }
+
+                <GridColumns>
+                    @foreach (var column in columns)
+                    {
+                        @if (column.Template is not null && column.FilterTemplate is not null)
+                        {
+                            <GridColumn Field="@column.Field"
+                                        HeaderText="@TranslateLabel(column)"
+                                        TextAlign="@column.TextAlign"
+                                        AllowSorting=@column.Sortable
+                                        Width="@column.Width"
+                                        Format="@column.Format"
+                                        AllowFiltering=@(column.HasHeaderFilter)
+                                        FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                        Type="@column.GetSfColumnType()"
+                                        Context="columnContext">
+
+                                <Template>
+                                    @column.Template((JToken)columnContext)
+                                </Template>
+
+                                <FilterTemplate>
+                                    @column.FilterTemplate
+                                </FilterTemplate>
+                            </GridColumn>
+                        }
+                        else if (column.Template is not null)
+                        {
+                            <GridColumn Field="@column.Field"
+                                        HeaderText="@TranslateLabel(column)"
+                                        TextAlign="@column.TextAlign"
+                                        Width="@column.Width"
+                                        Format="@column.Format"
+                                        Type="@column.GetSfColumnType()"
+                                        AllowFiltering=@(column.HasHeaderFilter)
+                                        FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                        Context="columnContext">
+                                <Template>
+                                    @column.Template((JToken)columnContext)
+                                </Template>
+                            </GridColumn>
+                        }
+                        else if (column.FilterTemplate is not null)
+                        {
+                            <GridColumn Field="@column.Field"
+                                        HeaderText="@TranslateLabel(column)"
+                                        TextAlign="@column.TextAlign"
+                                        Width="@column.Width"
+                                        Format="@column.Format"
+                                        AllowFiltering=@(column.HasHeaderFilter)
+                                        FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                        Type="@column.GetSfColumnType()">
+
+                                <FilterTemplate>
+                                    @column.FilterTemplate
+                                </FilterTemplate>
+                            </GridColumn>
+                        }
+                        else
+                        {
+                            <GridColumn Field="@column.Field"
+                                        HeaderText="@TranslateLabel(column)"
+                                        TextAlign="@column.TextAlign"
+                                        Format="@column.Format"
+                                        Width="@column.Width"
+                                        AllowFiltering=@(column.HasHeaderFilter)
+                                        FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                        Type="@column.GetSfColumnType()">
+                            </GridColumn>
+                        }
+                    }
+                </GridColumns>
+            </DynamicSfGridContainer>
+
+        </CascadingValue>
+    </CascadingValue>
+
+@code {
+    [Inject] IJsonPathInterpreter JsonPathInterpreter { get; set; } = default!;
+
+    [Inject] ITableUiSchemaInterpreter Interpreter { get; set; } = default!;
+
+    [Inject] DynamicColumnBuilder DynamicColumnBuilder { get; set; } = default!;
+
+    [Parameter]
+    public Type CustomDataAdaptorType { get; set; } = typeof(JTokenDataAdaptor);
+
+    [Parameter]
+    public IEnumerable<ItemModel> ToolbarItems { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public TableUiSchema TableUiSchema { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public TranslationSchema TranslationSchema { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public JSchema ItemsJsonSchema { get; set; } = default!;
+
+    [Parameter]
+    public bool AllowPaging { get; set; } = false;
+
+    [Parameter]
+    public bool EnableVirtualization { get; set; } = true;
+
+    [Parameter]
+    public bool EnableVirtualMaskRow { get; set; } = true;
+
+    private ITableTranslationContext? tableTranslationContext;    
+    private string? activeLanguage;
+    private DynamicColumn[] columns = [];
+
+    private string TranslateLabel(DynamicColumn col)
+    {
+        return tableTranslationContext?.TranslateLabel(activeLanguage, col.HeaderLabel, col.Scope.AbsoluteSchemaJsonPath)
+            ?? string.Empty;
+    }
+
+    Task ToolbarClickHandler(global::Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        var customToolbarItem = ToolbarItems.FirstOrDefault(x => x.Id == args.Item.Id);
+        if (customToolbarItem is not null)
+        {
+            return customToolbarItem.Click.InvokeAsync(args);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            return;
+        }
+
+        var language = DynamicGridCulture.Instance.TwoLetterISOLanguageName;
+        if (activeLanguage != language)
+        {
+            activeLanguage = language;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        tableTranslationContext = new TableTranslationContext(JsonPathInterpreter);
+        tableTranslationContext.Instantiate(TranslationSchema, ItemsJsonSchema);
+
+        activeLanguage = DynamicGridCulture.Instance.TwoLetterISOLanguageName;        
+        columns = DynamicColumnBuilder.BuildDynamicColumns(TableUiSchema, ItemsJsonSchema);
+
+        base.OnInitialized();
+    }
+}
