@@ -6,7 +6,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
 {
     public interface ITableTranslationContext
     {
-        void Instantiate(TranslationSchema translationSchema, JSchema dataSchema);
+        void Instantiate(TranslationSchema? translationSchema, JSchema dataSchema);
 
         string? TranslateLabel(string? language, LabelInterpretation? labelInterpretation = null, string? absoluteSchemaPath = null);
 

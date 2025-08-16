@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Schema;
+﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation;
 using Orbyss.Blazor.Syncfusion.DynamicGrid.Models;
 using Syncfusion.Blazor;
@@ -8,6 +9,14 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
 {
     public class DynamicColumnBuilder(ITableUiSchemaInterpreter interpreter, IColumnTypeProvider columnTypeProvider, IJsonPathInterpreter jsonPathInterpreter)
     {
+        internal DynamicColumn[] BuildDynamicColumns(JSchema itemsJsonSchema)
+        {
+            return BuildDynamicColumns(
+                GetDefaultTableUiSchema(itemsJsonSchema),
+                itemsJsonSchema
+            );
+        }
+
         internal DynamicColumn[] BuildDynamicColumns(TableUiSchema tableUiSchema, JSchema itemsJsonSchema)
         {
             var result = new List<DynamicColumn>();
@@ -17,7 +26,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
                 var scope = interpreter.InterpretScope(column.Scope);
                 var label = interpreter.InterpretLabel(column.I18n, column.Label);
                 var width = GetColumnWidth(tableUiSchema, column);
-                if(string.IsNullOrWhiteSpace(width))
+                if (string.IsNullOrWhiteSpace(width))
                 {
                     width = "150";
                 }
@@ -27,12 +36,12 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
                     columnType,
                     scope,
                     jsonPathInterpreter.FromSchemaPath(scope.AbsoluteSchemaJsonPath),
-                    label,                    
+                    label,
                     ParseRule(column.Filter?.Rule),
                     width,
-                    GetEnumConfiguration(columnType),                    
+                    GetEnumConfiguration(columnType),
                     null,
-                    GetTextAlign(tableUiSchema, column),                    
+                    GetTextAlign(tableUiSchema, column),
                     null,
                     column.Sortable ?? false,
                     column.Filter?.Types?.Contains(FilterItemType.Header) == true
@@ -43,6 +52,104 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
 
             return [.. result];
         }
+
+        private static TableUiSchema GetDefaultTableUiSchema(JSchema itemsJsonSchema)
+        {
+            var schemaToken = JToken.Parse($"{itemsJsonSchema}");
+            var properties = (JObject?)schemaToken["properties"];
+            var columns = new List<TableColumnItem>();
+
+            if (properties is not null)
+            {
+                foreach(var property in properties.Properties())
+                {
+                    AddDefaultColumnItem(property.Name, "$", property.Value, columns);
+                }
+            }
+
+            return new TableUiSchema(
+                new TableColumns(null, columns.ToArray()),
+                null,
+                null,
+                null
+            );
+        }
+
+        private static void AddDefaultColumnItem(string name, string? parentPath, JToken columnSchemaToken, List<TableColumnItem> result)
+        {
+            var path = $"{parentPath}.properties.{name}";
+
+            if ($"{columnSchemaToken["type"]}" == "object")
+            {
+                var properties = (JObject?)columnSchemaToken["properties"];
+                if (properties is null)
+                {
+                    return;
+                }
+
+                foreach (var property in properties.Properties())
+                {
+                    AddDefaultColumnItem(property.Name, path, property.Value, result);
+                }
+            }
+
+            else if($"{columnSchemaToken["type"]}" == "array")
+            {
+                var items = columnSchemaToken["items"];
+                if (items is JArray)
+                {
+                    throw new NotSupportedException($"Items must be one object: multiple items are not supported. Schema path: {parentPath}");
+                }
+
+                if (items?["type"]?.ToString() != "string")
+                {
+                    throw new NotSupportedException($"Items can only be of type string. Schema path: {parentPath}");
+                }
+
+                result.Add(
+                    new TableColumnItem(
+                        name,
+                        null,
+                        path,
+                        null,
+                        null,
+                        new TableFilterDefinition(
+                            FilterItemType.Header,
+                            FilterItemRule.Equals,
+                            true
+                        )
+                    )    
+                );
+            }
+            else
+            {
+                result.Add(
+                    new TableColumnItem(
+                        name,
+                        null,
+                        path,
+                        null,
+                        null,
+                        new TableFilterDefinition(
+                            FilterItemType.Header,
+                            GetRuleForType($"{columnSchemaToken["type"]}"),
+                            false
+                        )
+                    )
+                );
+            }
+        }
+
+        static FilterItemRule GetRuleForType(string type)
+        {
+            var jschemaType = Enum.Parse<JSchemaType>(type, true);
+            return jschemaType switch
+            {
+                JSchemaType.String => FilterItemRule.Contains,
+                _=> FilterItemRule.Equals                
+            };
+        }
+        
 
         static string? GetColumnWidth(TableUiSchema tableUiSchema, TableColumnItem column)
         {

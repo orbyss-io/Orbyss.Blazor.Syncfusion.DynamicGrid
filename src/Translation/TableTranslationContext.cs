@@ -14,7 +14,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
         private TranslationObject[] translations = [];
         private JObject schema = [];
 
-        public void Instantiate(TranslationSchema translationSchema, JSchema dataSchema)
+        public void Instantiate(TranslationSchema? translationSchema, JSchema dataSchema)
         {
             if (translations?.Length > 0)
             {
@@ -155,8 +155,13 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
             return translations.FirstOrDefault(x => x.Language.Equals(language, StringComparison.OrdinalIgnoreCase));
         }
 
-        private static IEnumerable<TranslationObject> ConvertToTranslationObjects(TranslationSchema translationSchema)
+        private static IEnumerable<TranslationObject> ConvertToTranslationObjects(TranslationSchema? translationSchema)
         {
+            if (translationSchema is null)
+            {
+                return [];
+            }
+
             return translationSchema.Resources.Select(x => ConvertToTranslationObject(x.Key, x.Value));
         }
 

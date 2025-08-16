@@ -4,6 +4,9 @@
 @using Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
 @using Orbyss.Components.Json.Models
 
+@implements IDisposable
+@implements IAsyncDisposable
+
 <SfGrid TValue="JToken"
         AllowPaging="@AllowPaging"
         EnableVirtualization=@EnableVirtualization
@@ -46,18 +49,35 @@
 
     [CascadingParameter]
     public ITableTranslationContext? TableTranslationContext { get; set; }
-    
-    [CascadingParameter]
-    public string ActiveLanguage { get; set; } = string.Empty;
+
+
+    void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        DynamicGridCulture.CultureChanged -= OnLanguageChanged;
+        GC.SuppressFinalize(this);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        DynamicGridCulture.CultureChanged -= OnLanguageChanged;
+        GC.SuppressFinalize(this);
+        return new();
+    }
 
     protected override void OnParametersSet()
     {
+        var activeLanguage = DynamicGridCulture.Instance.TwoLetterISOLanguageName;
         foreach (var col in Columns)
         {
             if (col.IsEnumFilter)
             {
                 var translatedEnums = TableTranslationContext?
-                    .TranslateEnum(ActiveLanguage, col.Scope)?
+                    .TranslateEnum(activeLanguage, col.Scope)?
                     .ToList()
                     ?? [];
 

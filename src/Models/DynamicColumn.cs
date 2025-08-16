@@ -13,7 +13,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
         string field,
         LabelInterpretation headerLabel,
         Operator? filterOperator,
-        string width = "150",
+        string width,
         DynamicColumnEnumConfiguration? enumConfiguration = null,
         DynamicColumnAdditionalConfiguration? additionalConfiguration = null,
         TextAlign textAlign = TextAlign.Left,
