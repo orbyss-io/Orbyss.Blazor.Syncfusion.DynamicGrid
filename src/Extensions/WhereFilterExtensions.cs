@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Data;
+using System;
 
 namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Extensions
 {
@@ -25,8 +26,10 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Extensions
             }
 
             var token = item.SelectToken(where.Field);
-            var value = token?.ToString();
-            var filterValue = $"{where.value}";
+            if (token is null)
+            {
+                return false;
+            }                       
 
             var comparison = where.IgnoreCase
                     ? StringComparison.OrdinalIgnoreCase
@@ -36,11 +39,12 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Extensions
             {
                 return @operator switch
                 {
-                    Operator.Equal => string.Equals(value, filterValue, comparison),
-                    Operator.NotEqual => !string.Equals(value, filterValue, comparison),
-                    Operator.Contains => value?.Contains(filterValue, comparison) == true,
-                    Operator.StartsWith => value?.StartsWith(filterValue, comparison) == true,
-                    Operator.EndsWith => value?.EndsWith(filterValue, comparison) == true,
+                    Operator.Equal => Equal(where.value, token, comparison),
+                    Operator.NotEqual => !Equal(where.value, token, comparison),
+                    Operator.Contains => Contains(where.value, token, comparison),
+                    Operator.DoesNotContain => !Contains(where.value, token, comparison),
+                    Operator.StartsWith => $"{where.value}"?.StartsWith($"{token}", comparison) == true,
+                    Operator.EndsWith => $"{where.value}"?.EndsWith($"{token}", comparison) == true,
                     Operator.GreaterThan => IsGreaterThan(token, where.value),
                     Operator.GreaterThanOrEqual => IsGreaterThanOrEqual(token, where.value),
                     Operator.LessThan => IsLessThan(token, where.value),
@@ -51,6 +55,36 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Extensions
             }
 
             return false;
+        }
+
+        static bool Equal(object whereValue, JToken column, StringComparison stringComparison)
+        {
+            if(whereValue is double doubleWhereValue)
+            {
+                return (double?)column == doubleWhereValue;
+            }
+
+            if (whereValue is int integerWhereValue)
+            {
+                return (int?)column == integerWhereValue;
+            }
+
+            if (whereValue is DateTime dateTimeWhereValue)
+            {
+                return (DateTime?)column == dateTimeWhereValue;
+            }
+
+            return string.Equals($"{whereValue}", $"{column}", stringComparison);
+        }
+
+        static bool Contains(object whereValue, JToken column, StringComparison stringComparison)
+        {
+            if(column is JArray jsonArray)
+            {
+                return jsonArray.Any(item => Equal(whereValue, item, stringComparison));
+            }          
+
+            return $"{whereValue}".Contains($"{column}", stringComparison);
         }
 
         private static bool IsGreaterThan(JToken? token, object searchValue)

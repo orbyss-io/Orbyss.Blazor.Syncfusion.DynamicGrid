@@ -14,7 +14,6 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
         LabelInterpretation headerLabel,
         Operator? filterOperator,
         string width,
-        DynamicColumnEnumConfiguration? enumConfiguration = null,
         DynamicColumnAdditionalConfiguration? additionalConfiguration = null,
         TextAlign textAlign = TextAlign.Left,
         string? format = null,
@@ -46,10 +45,6 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
         public RenderFragment<JToken>? Template { get; internal set; }
 
         public RenderFragment? FilterTemplate { get; internal set; }
-
-        public bool IsEnum => EnumConfiguration is not null;
-
-        public DynamicColumnEnumConfiguration? EnumConfiguration { get; } = enumConfiguration;
 
         public DynamicColumnAdditionalConfiguration AdditionalConfiguration { get; } = additionalConfiguration ?? new();
 

@@ -41,7 +41,6 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid
                     label,
                     ParseRule(columnType, column.Filter?.Rule),
                     width,
-                    GetEnumConfiguration(columnType),
                     null,
                     GetTextAlign(tableUiSchema, column),
                     null,
@@ -138,7 +137,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid
             return jschemaType switch
             {
                 JSchemaType.String => FilterItemRule.Contains,
-                _ => FilterItemRule.Equals
+                _ => FilterItemRule.Equal
             };
         }
 
@@ -161,11 +160,17 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid
 
             if (Enum.TryParse<Operator>(rule.ToString(), true, out var result))
             {
-                if ((type == TableColumnType.TextList || type == TableColumnType.IntegerList || type == TableColumnType.NumberList)
+                if ((type == TableColumnType.TextList || type == TableColumnType.IntegerList || type == TableColumnType.NumberList || type == TableColumnType.EnumList)
                     && result != Operator.Contains)
                 {
                     throw new NotSupportedException(
-                        $"You cannot define a filter operator '{result}' for table column type '{type}' other than 'Contains'."
+                        $"You cannot define the filter operator '{result}' for table column type '{type}': only 'Contains' is allowed."
+                    );
+                }
+                if (type == TableColumnType.Enum && result != Operator.Equal)
+                {
+                    throw new NotSupportedException(
+                        $"You cannot define the filter operator '{result}' for table column type '{type}': only 'Equal' is allowed."
                     );
                 }
 
@@ -193,7 +198,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid
         }
 
         private static DynamicColumnEnumConfiguration? GetEnumConfiguration(TableColumnType tableColumnType)
-        {
+        {            
             if (tableColumnType is TableColumnType.Enum)
             {
                 return new(false);

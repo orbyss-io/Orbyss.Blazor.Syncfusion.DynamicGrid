@@ -32,7 +32,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
     public enum FilterItemRule
     {
         Contains,
-        Equals,
+        Equal,        
         StartsWith,
         EndsWith,
         GreaterThan,

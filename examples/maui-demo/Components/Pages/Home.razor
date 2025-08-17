@@ -31,6 +31,10 @@ Parameters:
 
     string? selectedCulture;
 
+    List<double> selectedTaggedValues = [];
+
+    void SetSelectedTaggedValues(double[] values) => selectedTaggedValues = values.ToList();
+
     protected override void OnInitialized()
     {
         selectedCulture = Cultures[0];

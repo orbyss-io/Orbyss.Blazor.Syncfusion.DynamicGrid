@@ -12,7 +12,7 @@
             EnableInfiniteScrolling=@(Options?.EnableVirtualization ?? false)
             Height="@(Options?.VirtualizationOptions?.FixedHeight ?? "auto")"
             AllowFiltering=@(allowFiltering)
-            EnableVirtualMaskRow=@(Options?.VirtualizationOptions?.EnableMaskRows ?? false)            
+            EnableVirtualMaskRow=@(Options?.VirtualizationOptions?.EnableMaskRows ?? false)
             AllowSorting="@(allowSorting)"
             Toolbar="@ToolbarItems"
             @ref="GridRef">
@@ -97,7 +97,7 @@ else
         var activeLanguage = DynamicGridCulture.Instance.TwoLetterISOLanguageName;
         foreach (var col in Columns)
         {
-            if (col.IsEnum)
+            if (col.ColumnType == TableColumnType.Enum || col.ColumnType == TableColumnType.EnumList)
             {
                 var translatedEnums = TableTranslationContext?
                     .TranslateEnum(activeLanguage, col.Scope)?
@@ -113,7 +113,7 @@ else
                         builder.AddContent(0, new MarkupString());
                     };
                 }
-                else if (col.EnumConfiguration!.MultiSelect)
+                else if (col.FilterOperator == Operator.Contains)
                 {
                     col.FilterTemplate = BuildMultiEnumFilterTemplate(col, translatedEnums);
                 }
@@ -214,14 +214,7 @@ else
                 }
                 else
                 {
-                    if (col.ColumnType == TableColumnType.EnumList)
-                    {
-                        await GridRef!.FilterByColumnAsync(col.Field, "contains", e.ToArray());
-                    }
-                    else
-                    {
-                        await GridRef!.FilterByColumnAsync(col.Field, "equal", e.ToArray());
-                    }
+                    await GridRef!.FilterByColumnAsync(col.Field, "contains", e.ToArray());
                 }
             }));
 
@@ -276,14 +269,7 @@ else
                 }
                 else
                 {
-                    if (col.ColumnType == TableColumnType.EnumList)
-                    {
-                        await GridRef!.FilterByColumnAsync(col.Field, "contains", e);
-                    }
-                    else
-                    {
-                        await GridRef!.FilterByColumnAsync(col.Field, "equal", e);
-                    }
+                    await GridRef!.FilterByColumnAsync(col.Field, "equal", e);
                 }
             }));
 
@@ -304,6 +290,7 @@ else
         };
     }
 
+    private System.Timers.Timer? textListDebounceTimer;
     RenderFragment BuildTextListFilterTemplate(DynamicColumn col)
     {
         return builder =>
@@ -311,15 +298,29 @@ else
             int seq = 0;
             builder.OpenComponent(seq++, typeof(SfTextBox));
             builder.AddAttribute(seq++, nameof(SfTextBox.Type), InputType.Text);
-            builder.AddAttribute(seq++, nameof(SfTextBox.ValueChanged), EventCallback.Factory.Create<string>(this, async e =>
+            builder.AddAttribute(seq++, nameof(SfTextBox.Input), EventCallback.Factory.Create<InputEventArgs>(this, async e =>
             {
-                if (string.IsNullOrWhiteSpace(e))
+                if (string.IsNullOrWhiteSpace(e?.Value))
                 {
                     await GridRef!.ClearFilteringAsync(col.Field);
                 }
-                else
+                 else
                 {
-                    await GridRef!.FilterByColumnAsync(col.Field, "contains", e);
+                    textListDebounceTimer?.Stop();
+                    textListDebounceTimer = new System.Timers.Timer(1000); // 1 sec
+
+                    textListDebounceTimer.Elapsed += (_, __) =>
+                    {
+                        textListDebounceTimer?.Stop();
+
+                        InvokeAsync(async () =>
+                        {
+                            await GridRef!.FilterByColumnAsync(col.Field, "contains", e.Value);
+                        });
+
+                    };
+                    textListDebounceTimer.AutoReset = false;
+                    textListDebounceTimer.Start();
                 }
             }));
 
@@ -330,30 +331,64 @@ else
         };
     }
 
+
+    private System.Timers.Timer? integerListDebounceTimer;
+
     RenderFragment BuildIntegerListFilterTemplate(DynamicColumn col)
     {
         return builder =>
         {
             int seq = 0;
             builder.OpenComponent(seq++, typeof(SfNumericTextBox<int?>));
-            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int?>.ValueChanged), EventCallback.Factory.Create<int?>(this, async e =>
-            {
-                if (!e.HasValue)
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int>.OnInput), EventCallback.Factory.Create<Microsoft.AspNetCore.Components.ChangeEventArgs>(
+                this, 
+                async e =>
                 {
-                    await GridRef!.ClearFilteringAsync(col.Field);
-                }
-                else
-                {
-                    await GridRef!.FilterByColumnAsync(col.Field, "contains", e);
-                }
-            }));
+                    if (string.IsNullOrWhiteSpace($"{e?.Value}"))
+                    {
+                        await GridRef!.ClearFilteringAsync(col.Field);
+                    }
+                    else
+                    {
+                        integerListDebounceTimer?.Stop();
+                        integerListDebounceTimer = new System.Timers.Timer(1000); // 1 sec
 
-            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int?>.Width), "100%");
-            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int?>.ShowClearButton), true);
+                        integerListDebounceTimer.Elapsed += (_, __) =>
+                        {
+                            integerListDebounceTimer?.Stop();
+
+                            InvokeAsync(async () =>
+                            {
+                                var value = int.Parse($"{e?.Value}");
+                                await GridRef!.FilterByColumnAsync(col.Field, "contains", value);
+                            });
+
+                        };
+                        integerListDebounceTimer.AutoReset = false;
+                        integerListDebounceTimer.Start();
+                    }
+                }
+            ));
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int>.ValueChanged), EventCallback.Factory.Create<int?>(
+               this,
+               async e =>
+               {
+                   if (!e.HasValue)
+                   {
+                       await GridRef!.ClearFilteringAsync(col.Field);
+                   }
+               }
+           ));
+
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int>.Width), "100%");
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int>.ShowSpinButton), false);
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int>.ShowClearButton), true);
 
             builder.CloseComponent();
         };
     }
+
+    private System.Timers.Timer? numberListDebounceTimer;
 
     RenderFragment BuildNumberListFilterTemplate(DynamicColumn col)
     {
@@ -361,19 +396,37 @@ else
         {
             int seq = 0;
             builder.OpenComponent(seq++, typeof(SfTextBox));
-            builder.AddAttribute(seq++, nameof(SfTextBox.Type), InputType.Number);
-            builder.AddAttribute(seq++, nameof(SfTextBox.ValueChanged), EventCallback.Factory.Create<string>(this, async e =>
-            {
-                if (string.IsNullOrWhiteSpace(e))
+            builder.AddAttribute(seq++, nameof(SfTextBox.Type), InputType.Number);            
+            builder.AddAttribute(seq++, nameof(SfTextBox.Input), EventCallback.Factory.Create<InputEventArgs>(
+                this, 
+                async e =>
                 {
-                    await GridRef!.ClearFilteringAsync(col.Field);
-                }
-                else
-                {
-                    var filterValue = double.Parse(e, DynamicGridCulture.Instance);
-                    await GridRef!.FilterByColumnAsync(col.Field, "contains", filterValue);
-                }
-            }));
+                    if (string.IsNullOrWhiteSpace(e?.Value))
+                    {
+                        await GridRef!.ClearFilteringAsync(col.Field);
+                    }
+                    else
+                    {
+                        numberListDebounceTimer?.Stop();
+                        numberListDebounceTimer = new System.Timers.Timer(1000); // 1 sec
+
+                        numberListDebounceTimer.Elapsed += (_, __) =>
+                        {
+                            numberListDebounceTimer?.Stop();
+
+                            InvokeAsync(async () =>
+                            {
+                                var numberFormat = DynamicGridCulture.Instance.NumberFormat;
+                                var filterValue = double.Parse(e.Value, numberFormat);
+                                await GridRef!.FilterByColumnAsync(col.Field, "contains", filterValue);
+                            });
+
+                        };
+                        numberListDebounceTimer.AutoReset = false;
+                        numberListDebounceTimer.Start();
+                    }
+                })
+            );
 
             builder.AddAttribute(seq++, nameof(SfTextBox.Width), "100%");
             builder.AddAttribute(seq++, nameof(SfTextBox.ShowClearButton), true);
