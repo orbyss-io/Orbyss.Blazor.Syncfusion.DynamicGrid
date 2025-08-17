@@ -26,7 +26,7 @@ namespace Syncfusion.DynamicGrid.Demo
 #endif
 
             // Register License Key
-            SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JEaF5cXmRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXdfd3RcQ2BZWU11XkZWYEk=");
+            SyncfusionLicenseProvider.RegisterLicense("");
 
             // Register Syncfusion Blazor Core services
             builder.Services.AddSyncfusionBlazor();
