@@ -1,15 +1,17 @@
 ﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
+using Orbyss.Blazor.Syncfusion.DynamicGrid.Interfaces;
 using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation;
 using Orbyss.Blazor.Syncfusion.DynamicGrid.Models;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Grids;
 
-namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
+namespace Orbyss.Blazor.Syncfusion.DynamicGrid
 {
     public class DynamicColumnBuilder(ITableUiSchemaInterpreter interpreter, IColumnTypeProvider columnTypeProvider, IJsonPathInterpreter jsonPathInterpreter)
+        : IDynamicColumnBuilder
     {
-        internal DynamicColumn[] BuildDynamicColumns(JSchema itemsJsonSchema)
+        public DynamicColumn[] BuildDynamicColumns(JSchema itemsJsonSchema)
         {
             return BuildDynamicColumns(
                 GetDefaultTableUiSchema(itemsJsonSchema),
@@ -17,7 +19,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
             );
         }
 
-        internal DynamicColumn[] BuildDynamicColumns(TableUiSchema tableUiSchema, JSchema itemsJsonSchema)
+        public DynamicColumn[] BuildDynamicColumns(TableUiSchema tableUiSchema, JSchema itemsJsonSchema)
         {
             var result = new List<DynamicColumn>();
 
@@ -37,7 +39,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
                     scope,
                     jsonPathInterpreter.FromSchemaPath(scope.AbsoluteSchemaJsonPath),
                     label,
-                    ParseRule(column.Filter?.Rule),
+                    ParseRule(columnType, column.Filter?.Rule),
                     width,
                     GetEnumConfiguration(columnType),
                     null,
@@ -45,10 +47,10 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
                     null,
                     column.Sortable ?? false,
                     column.Filter?.Types?.Contains(FilterItemType.Header) == true
-                );
+                );                
 
                 result.Add(dynamicColumn);
-            }
+            }            
 
             return [.. result];
         }
@@ -61,14 +63,14 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
 
             if (properties is not null)
             {
-                foreach(var property in properties.Properties())
+                foreach (var property in properties.Properties())
                 {
                     AddDefaultColumnItem(property.Name, "$", property.Value, columns);
                 }
             }
 
             return new TableUiSchema(
-                new TableColumns(null, columns.ToArray()),
+                new TableColumns(null, [.. columns]),
                 null,
                 null,
                 null
@@ -92,18 +94,12 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
                     AddDefaultColumnItem(property.Name, path, property.Value, result);
                 }
             }
-
-            else if($"{columnSchemaToken["type"]}" == "array")
+            else if ($"{columnSchemaToken["type"]}" == "array")
             {
                 var items = columnSchemaToken["items"];
                 if (items is JArray)
                 {
                     throw new NotSupportedException($"Items must be one object: multiple items are not supported. Schema path: {parentPath}");
-                }
-
-                if (items?["type"]?.ToString() != "string")
-                {
-                    throw new NotSupportedException($"Items can only be of type string. Schema path: {parentPath}");
                 }
 
                 result.Add(
@@ -113,12 +109,8 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
                         path,
                         null,
                         null,
-                        new TableFilterDefinition(
-                            FilterItemType.Header,
-                            FilterItemRule.Equals,
-                            true
-                        )
-                    )    
+                        null
+                    )
                 );
             }
             else
@@ -140,20 +132,19 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
             }
         }
 
-        static FilterItemRule GetRuleForType(string type)
+        private static FilterItemRule GetRuleForType(string type)
         {
             var jschemaType = Enum.Parse<JSchemaType>(type, true);
             return jschemaType switch
             {
                 JSchemaType.String => FilterItemRule.Contains,
-                _=> FilterItemRule.Equals                
+                _ => FilterItemRule.Equals
             };
         }
-        
 
-        static string? GetColumnWidth(TableUiSchema tableUiSchema, TableColumnItem column)
+        private static string? GetColumnWidth(TableUiSchema tableUiSchema, TableColumnItem column)
         {
-            if(string.IsNullOrWhiteSpace(column.Layout?.Width))
+            if (string.IsNullOrWhiteSpace(column.Layout?.Width))
             {
                 return tableUiSchema.Columns.GlobalLayout?.Width;
             }
@@ -161,7 +152,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
             return column.Layout?.Width;
         }
 
-        private static Operator? ParseRule(FilterItemRule? rule)
+        private static Operator? ParseRule(TableColumnType type, FilterItemRule? rule)
         {
             if (!rule.HasValue)
             {
@@ -170,6 +161,14 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
 
             if (Enum.TryParse<Operator>(rule.ToString(), true, out var result))
             {
+                if ((type == TableColumnType.TextList || type == TableColumnType.IntegerList || type == TableColumnType.NumberList)
+                    && result != Operator.Contains)
+                {
+                    throw new NotSupportedException(
+                        $"You cannot define a filter operator '{result}' for table column type '{type}' other than 'Contains'."
+                    );
+                }
+
                 return result;
             }
 
@@ -185,12 +184,12 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Helpers
             }
             else
             {
-                horizontalAlignment = tableSchema.Columns.GlobalLayout?.Alignment.Horizontal ?? HorizontalAlignment.Center;
+                horizontalAlignment = tableSchema.Columns.GlobalLayout?.Alignment.Horizontal ?? HorizontalAlignment.Left;
             }
 
             return Enum.TryParse<TextAlign>($"{horizontalAlignment}", true, out var result)
                 ? result
-                : TextAlign.Center;
+                : TextAlign.Left;
         }
 
         private static DynamicColumnEnumConfiguration? GetEnumConfiguration(TableColumnType tableColumnType)

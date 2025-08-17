@@ -4,13 +4,13 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid
 {
     public static class DynamicGridCulture
     {
-        private static CultureInfo instance = new ("en-US");
+        private static CultureInfo instance = new("en-US");
 
         public static event Action CultureChanged = default!;
 
-        public static CultureInfo Instance 
-        { 
-            get => instance; 
+        public static CultureInfo Instance
+        {
+            get => instance;
             set
             {
                 instance = value;

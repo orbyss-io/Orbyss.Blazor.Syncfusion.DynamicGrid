@@ -1,27 +1,53 @@
 ﻿@namespace Orbyss.SyncFusion.DynamicGrid.Internal
-@using Orbyss.Blazor.Syncfusion.DynamicGrid
-@using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
-@using Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
-@using Orbyss.Components.Json.Models
 
 @implements IDisposable
 @implements IAsyncDisposable
 
-<SfGrid TValue="JToken"
-        AllowPaging="@AllowPaging"
-        EnableVirtualization=@EnableVirtualization
-        AllowFiltering=@AllowFiltering
-        EnableVirtualMaskRow=@EnableVirtualMaskRow
-        AllowSorting="@AllowSorting"
-        Toolbar="@ToolbarItems"
-        @ref="GridRef">
+@if (ToolbarItems.Any())
+{
+    <SfGrid TValue="JToken"
+            EnableAdaptiveUI=true
+            AllowPaging="@(Options?.EnablePaging ?? false)"
+            EnableVirtualization=@(Options?.EnableVirtualization ?? false)
+            EnableInfiniteScrolling=@(Options?.EnableVirtualization ?? false)
+            Height="@(Options?.VirtualizationOptions?.FixedHeight ?? "auto")"
+            AllowFiltering=@(allowFiltering)
+            EnableVirtualMaskRow=@(Options?.VirtualizationOptions?.EnableMaskRows ?? false)            
+            AllowSorting="@(allowSorting)"
+            Toolbar="@ToolbarItems"
+            @ref="GridRef">
 
         @ChildContent
 
-</SfGrid>
+    </SfGrid>
+}
+else
+{
+    <SfGrid TValue="JToken"
+            EnableAdaptiveUI=true
+            AllowPaging="@(Options?.EnablePaging ?? false)"
+            EnableVirtualization=@(Options?.EnableVirtualization ?? false)
+            EnableInfiniteScrolling=@(Options?.EnableVirtualization ?? false)
+            Height="@(Options?.VirtualizationOptions?.FixedHeight ?? "auto")"
+            AllowFiltering=@(allowFiltering)
+            EnableVirtualMaskRow=@(Options?.VirtualizationOptions?.EnableMaskRows ?? false)
+            AllowSorting="@(allowSorting)"
+            @ref="GridRef">
+
+        @ChildContent
+
+    </SfGrid>
+}
+
 
 @code {
     private SfGrid<JToken>? GridRef;
+
+    [Inject]
+    IColumnValueStringifier ColumnValueStringifier { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public DynamicGridOptions? Options { get; set; }
 
     [Parameter, EditorRequired]
     public RenderFragment ChildContent { get; set; } = default!;
@@ -29,20 +55,6 @@
     [Parameter]
     public IEnumerable<ItemModel> ToolbarItems { get; set; } = [];
 
-    [Parameter]
-    public bool AllowPaging { get; set; }
-
-    [Parameter]
-    public bool EnableVirtualization { get; set; }
-
-    [Parameter]
-    public bool EnableVirtualMaskRow { get; set; }
-
-    [Parameter]
-    public bool AllowSorting { get; set; }
-
-    [Parameter]
-    public bool AllowFiltering { get; set; }
 
     [CascadingParameter]
     public DynamicColumn[] Columns { get; set; } = [];
@@ -50,6 +62,9 @@
     [CascadingParameter]
     public ITableTranslationContext? TableTranslationContext { get; set; }
 
+
+    bool allowFiltering;
+    bool allowSorting;
 
     void OnLanguageChanged()
     {
@@ -69,36 +84,27 @@
         return new();
     }
 
+    protected override void OnInitialized()
+    {
+        allowFiltering = Columns.Any(x => x.FilterOperator.HasValue);
+        allowSorting = Columns.Any(x => x.Sortable);
+
+        base.OnInitialized();
+    }
+
     protected override void OnParametersSet()
     {
         var activeLanguage = DynamicGridCulture.Instance.TwoLetterISOLanguageName;
         foreach (var col in Columns)
         {
-            if (col.IsEnumFilter)
+            if (col.IsEnum)
             {
                 var translatedEnums = TableTranslationContext?
                     .TranslateEnum(activeLanguage, col.Scope)?
                     .ToList()
                     ?? [];
 
-                translatedEnums.Insert(0, new TranslatedEnumItem("", ""));
-
-                col.Template = rowToken =>
-                {
-                    return builder =>
-                    {
-                        var token = rowToken.SelectToken(col.Field, false);
-                        if (token is not null)
-                        {
-                            var translation = translatedEnums.FirstOrDefault(x => x.Value == $"{token}");
-                            builder.AddContent(0, new MarkupString($"{translation.Label}"));
-                        }
-                        else
-                        {
-                            builder.AddContent(0, new MarkupString($"VAL_ERR"));
-                        }
-                    };
-                };
+                col.Template = BuildEnumColumnTemplate(col, translatedEnums);
 
                 if (!col.HasHeaderFilter)
                 {
@@ -122,7 +128,7 @@
                 {
                     return builder =>
                     {
-                        var columnText = ColumnTypeTextTranslator.StringifyColumn(                            
+                        var columnText = ColumnValueStringifier.StringifyColumn(
                             col,
                             rowToken
                         );
@@ -136,10 +142,63 @@
                         builder.AddContent(0, new MarkupString());
                     };
                 }
+                else if (col.ColumnType == TableColumnType.TextList)
+                {
+                    col.FilterTemplate = BuildTextListFilterTemplate(col);
+                }
+                else if (col.ColumnType == TableColumnType.IntegerList)
+                {
+                    col.FilterTemplate = BuildIntegerListFilterTemplate(col);
+                }
+                else if (col.ColumnType == TableColumnType.NumberList)
+                {
+                    col.FilterTemplate = BuildNumberListFilterTemplate(col);
+                }
             }
         }
     }
 
+    RenderFragment<JToken> BuildEnumColumnTemplate(DynamicColumn col, IEnumerable<TranslatedEnumItem> translatedEnums)
+    {
+        return rowToken =>
+        {
+            return builder =>
+            {
+                var token = rowToken.SelectToken(col.Field, false);
+                if (token is JArray enumArray)
+                {
+                    var translations = translatedEnums.Where(@enum =>
+                    {
+                        return enumArray.Any(item => item.ToString() == @enum.Value);
+                    });
+                    var labels = translations.Select(x => x.Label);
+                    builder.AddContent(
+                        0,
+                        new MarkupString(
+                            string.Join(", ", labels)
+                        )
+                    );
+                }
+                else if (token is not null)
+                {
+                    var translation = translatedEnums.FirstOrDefault(@enum =>
+                    {
+                        return @enum.Value == $"{token}";
+                    });
+                    builder.AddContent(
+                        0,
+                        new MarkupString(
+                            translation.Label
+                        )
+                    );
+                }
+                else
+                {
+                    builder.AddContent(0, new MarkupString($"VAL_ERR"));
+                }
+            };
+        };
+    }
 
     RenderFragment BuildMultiEnumFilterTemplate(DynamicColumn col, IEnumerable<TranslatedEnumItem> translatedEnums)
     {
@@ -150,16 +209,25 @@
             builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<List<string>>(this, async e =>
             {
                 if (e is null || e.Count == 0)
+                {
                     await GridRef!.ClearFilteringAsync(col.Field);
+                }
                 else
                 {
-                    await GridRef!.FilterByColumnAsync(col.Field, "equal", e.ToArray());
+                    if (col.ColumnType == TableColumnType.EnumList)
+                    {
+                        await GridRef!.FilterByColumnAsync(col.Field, "contains", e.ToArray());
+                    }
+                    else
+                    {
+                        await GridRef!.FilterByColumnAsync(col.Field, "equal", e.ToArray());
+                    }
                 }
             }));
 
             builder.AddAttribute(seq++, "DataSource", translatedEnums);
             builder.AddAttribute(seq++, "Width", "100%");
-            builder.AddAttribute(seq++, "ShowClearButton", false);
+            builder.AddAttribute(seq++, "ShowClearButton", true);
 
             builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(fieldBuilder =>
             {
@@ -174,6 +242,26 @@
         };
     }
 
+    RenderFragment<JToken> BuildSingleEnumColumnTemplate(DynamicColumn col, IEnumerable<TranslatedEnumItem> translatedEnums)
+    {
+        return rowToken =>
+        {
+            return builder =>
+            {
+                var token = rowToken.SelectToken(col.Field, false);
+                if (token is not null)
+                {
+                    var translation = translatedEnums.FirstOrDefault(x => x.Value == $"{token}");
+                    builder.AddContent(0, new MarkupString($"{translation.Label}"));
+                }
+                else
+                {
+                    builder.AddContent(0, new MarkupString($"VAL_ERR"));
+                }
+            };
+        };
+    }
+
     RenderFragment BuildSingleEnumFilterTemplate(DynamicColumn col, IEnumerable<TranslatedEnumItem> translatedEnums)
     {
         return builder =>
@@ -183,16 +271,25 @@
             builder.AddAttribute(seq++, "ValueChanged", EventCallback.Factory.Create<string>(this, async e =>
             {
                 if (string.IsNullOrWhiteSpace(e))
+                {
                     await GridRef!.ClearFilteringAsync(col.Field);
+                }
                 else
                 {
-                    await GridRef!.FilterByColumnAsync(col.Field, "equal", e);
+                    if (col.ColumnType == TableColumnType.EnumList)
+                    {
+                        await GridRef!.FilterByColumnAsync(col.Field, "contains", e);
+                    }
+                    else
+                    {
+                        await GridRef!.FilterByColumnAsync(col.Field, "equal", e);
+                    }
                 }
             }));
 
             builder.AddAttribute(seq++, "DataSource", translatedEnums);
             builder.AddAttribute(seq++, "Width", "100%");
-            builder.AddAttribute(seq++, "ShowClearButton", false);
+            builder.AddAttribute(seq++, "ShowClearButton", true);
 
             builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(fieldBuilder =>
             {
@@ -202,6 +299,84 @@
                 fieldBuilder.CloseComponent();
             }));
 
+
+            builder.CloseComponent();
+        };
+    }
+
+    RenderFragment BuildTextListFilterTemplate(DynamicColumn col)
+    {
+        return builder =>
+        {
+            int seq = 0;
+            builder.OpenComponent(seq++, typeof(SfTextBox));
+            builder.AddAttribute(seq++, nameof(SfTextBox.Type), InputType.Text);
+            builder.AddAttribute(seq++, nameof(SfTextBox.ValueChanged), EventCallback.Factory.Create<string>(this, async e =>
+            {
+                if (string.IsNullOrWhiteSpace(e))
+                {
+                    await GridRef!.ClearFilteringAsync(col.Field);
+                }
+                else
+                {
+                    await GridRef!.FilterByColumnAsync(col.Field, "contains", e);
+                }
+            }));
+
+            builder.AddAttribute(seq++, nameof(SfTextBox.Width), "100%");
+            builder.AddAttribute(seq++, nameof(SfTextBox.ShowClearButton), true);
+
+            builder.CloseComponent();
+        };
+    }
+
+    RenderFragment BuildIntegerListFilterTemplate(DynamicColumn col)
+    {
+        return builder =>
+        {
+            int seq = 0;
+            builder.OpenComponent(seq++, typeof(SfNumericTextBox<int?>));
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int?>.ValueChanged), EventCallback.Factory.Create<int?>(this, async e =>
+            {
+                if (!e.HasValue)
+                {
+                    await GridRef!.ClearFilteringAsync(col.Field);
+                }
+                else
+                {
+                    await GridRef!.FilterByColumnAsync(col.Field, "contains", e);
+                }
+            }));
+
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int?>.Width), "100%");
+            builder.AddAttribute(seq++, nameof(SfNumericTextBox<int?>.ShowClearButton), true);
+
+            builder.CloseComponent();
+        };
+    }
+
+    RenderFragment BuildNumberListFilterTemplate(DynamicColumn col)
+    {
+        return builder =>
+        {
+            int seq = 0;
+            builder.OpenComponent(seq++, typeof(SfTextBox));
+            builder.AddAttribute(seq++, nameof(SfTextBox.Type), InputType.Number);
+            builder.AddAttribute(seq++, nameof(SfTextBox.ValueChanged), EventCallback.Factory.Create<string>(this, async e =>
+            {
+                if (string.IsNullOrWhiteSpace(e))
+                {
+                    await GridRef!.ClearFilteringAsync(col.Field);
+                }
+                else
+                {
+                    var filterValue = double.Parse(e, DynamicGridCulture.Instance);
+                    await GridRef!.FilterByColumnAsync(col.Field, "contains", filterValue);
+                }
+            }));
+
+            builder.AddAttribute(seq++, nameof(SfTextBox.Width), "100%");
+            builder.AddAttribute(seq++, nameof(SfTextBox.ShowClearButton), true);
 
             builder.CloseComponent();
         };

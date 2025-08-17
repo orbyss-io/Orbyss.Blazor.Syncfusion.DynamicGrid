@@ -42,12 +42,12 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
 
         private static TableColumnType HandleInteger(JSchema schema)
         {
-            if (schema.Format == "date")
+            if (IsDateFormat(schema.Format))
             {
                 return TableColumnType.DateOnlyTicks;
             }
 
-            if (schema.Format == "datetime")
+            if (IsDateTimeFormat(schema.Format))
             {
                 return TableColumnType.DateTimeTicks;
             }
@@ -57,17 +57,38 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
 
         private static TableColumnType HandleNumber(JSchema schema)
         {
-            if (schema.Format == "date")
+            if (IsDateFormat(schema.Format))
             {
                 return TableColumnType.DateOnlyTicks;
             }
 
-            if (schema.Format == "datetime")
+            if (IsDateTimeFormat(schema.Format))
             {
                 return TableColumnType.DateTimeTicks;
             }
 
             return TableColumnType.Number;
+        }
+
+        private static bool IsDateTimeFormat(string? format)
+        {
+            if (string.IsNullOrWhiteSpace(format))
+            {
+                return false;
+            }
+
+            return format.Equals("datetime", StringComparison.OrdinalIgnoreCase)
+                || format.Equals("date-time", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsDateFormat(string? format)
+        {
+            if (string.IsNullOrWhiteSpace(format))
+            {
+                return false;
+            }
+
+            return format.Equals("date", StringComparison.OrdinalIgnoreCase);
         }
 
         private static TableColumnType HandleArrayType(JSchema schema)
@@ -83,32 +104,49 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
 
             var itemsSchema = schema.Items.First();
 
-            if (!itemsSchema.Type.HasValue || itemsSchema.Type.Value.HasFlag(JSchemaType.String))
+            if (!itemsSchema.Type.HasValue)
             {
-                throw new InvalidOperationException($"The items schema of array is '{itemsSchema.Type}', however only '{JSchemaType.String}' is supported in the array control type.");
+                throw new InvalidOperationException($"The type of items array schema section could not be determined; was null.");
             }
 
-            return HandleStringType(itemsSchema, schema);
+            if (itemsSchema.Type.Value.HasFlag(JSchemaType.Number))
+            {
+                return TableColumnType.NumberList;
+            }
+            if (itemsSchema.Type.Value.HasFlag(JSchemaType.Integer))
+            {
+                return TableColumnType.IntegerList;
+            }
+            if (itemsSchema.Type.Value.HasFlag(JSchemaType.String))
+            {
+                if (itemsSchema.Enum.Count > 0)
+                {
+                    return TableColumnType.EnumList;
+                }
+
+                return TableColumnType.TextList;
+            }
+
+            throw new NotSupportedException($"Items schema of type '{itemsSchema.Type}' is not supported for a column");
         }
 
-        private static TableColumnType HandleStringType(JSchema schema, JSchema? parentSchema = null)
+        private static TableColumnType HandleStringType(JSchema schema)
         {
-            var format = schema.Format?.ToLower();
-            var enumItems = schema.Enum.Select(x => x.ToString());
-            var isArray = parentSchema?.Type?.HasFlag(JSchemaType.Array) == true;
-
-            if (enumItems.Any())
+            if (IsDateTimeFormat(schema.Format))
             {
-                return isArray
-                    ? TableColumnType.EnumList
-                    : TableColumnType.Enum;
+                return TableColumnType.DateTime;
+            }
+            if (IsDateFormat(schema.Format))
+            {
+                return TableColumnType.DateOnly;
             }
 
-            return format == "datetime"
-                ? TableColumnType.DateTime
-                : format == "date"
-                    ? TableColumnType.DateOnly
-                    : TableColumnType.Text;
+            if (schema.Enum.Count > 0)
+            {
+                return TableColumnType.Enum;
+            }
+
+            return TableColumnType.Text;
         }
     }
 

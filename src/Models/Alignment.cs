@@ -5,8 +5,8 @@ using System.Text.Json.Serialization;
 namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
 {
     public readonly record struct Alignment(
-        [property: JsonProperty, System.Text.Json.Serialization.JsonRequired, Newtonsoft.Json.JsonRequired, JsonPropertyName("horizontal")] HorizontalAlignment Horizontal,
-        [property: JsonProperty, System.Text.Json.Serialization.JsonRequired, Newtonsoft.Json.JsonRequired, JsonPropertyName("vertical")] VerticalAlignment Vertical
+        [property: JsonProperty, JsonPropertyName("horizontal")] HorizontalAlignment Horizontal = HorizontalAlignment.Left,
+        [property: JsonProperty, JsonPropertyName("vertical")] VerticalAlignment Vertical = VerticalAlignment.Center
     );
 
     [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter))]

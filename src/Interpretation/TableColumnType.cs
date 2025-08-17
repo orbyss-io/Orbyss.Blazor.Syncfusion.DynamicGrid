@@ -3,8 +3,11 @@
     public enum TableColumnType
     {
         Text,
+        TextList,
         Number,
+        NumberList,
         Integer,
+        IntegerList,
         Enum,
         EnumList,
         Boolean,

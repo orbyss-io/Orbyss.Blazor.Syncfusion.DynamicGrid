@@ -13,7 +13,9 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Extensions
             services
                 .AddScoped<IJsonPathInterpreter, JsonPathInterpreter>()
                 .AddScoped<ITableUiSchemaInterpreter, TableUiSchemaInterpreter>()
-                .AddScoped<DynamicColumnBuilder>();
+                .AddScoped<IDynamicColumnBuilder, DynamicColumnBuilder>()
+                .AddScoped<IColumnTypeProvider, ColumnTypeProvider>()
+                .AddScoped<IColumnValueStringifier, ColumnValueStringifier>();
 
             if (tokenDataAdaptorFactory is not null)
             {

@@ -1,4 +1,5 @@
-﻿@using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
+﻿@using Orbyss.Blazor.Syncfusion.DynamicGrid.Interfaces
+@using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
 @using Orbyss.Blazor.Syncfusion.DynamicGrid.Translation
 @using Orbyss.Components.Json.Models
 
@@ -6,92 +7,110 @@
 @implements IAsyncDisposable
 
 <CascadingValue Value="@tableTranslationContext">
-    <DynamicSfGridContainer AllowPaging="@AllowPaging"
-                            EnableVirtualization=@EnableVirtualization
-                            AllowFiltering=true
-                            EnableVirtualMaskRow=@EnableVirtualMaskRow
-                            AllowSorting="true">
+    <CascadingValue Value="@columns">
+        <DynamicSfGridContainer Options="@(Options)">
 
-        <SfDataManager AdaptorInstance="@(CustomDataAdaptorType)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-
-        @if (ToolbarItems.Any())
-        {
-            <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="JToken"></GridEvents>
-        }
-
-        <GridColumns>
-            @foreach (var column in columns)
+            @if (ShouldRenderInfiniteScrollingSettings())
             {
-                @if (column.Template is not null && column.FilterTemplate is not null)
-                {
-                    <GridColumn Field="@column.Field"
-                                HeaderText="@TranslateLabel(column)"
-                                TextAlign="@column.TextAlign"
-                                AllowSorting=@column.Sortable
-                                Width="@column.Width"
-                                Format="@column.Format"
-                                AllowFiltering=@(column.HasHeaderFilter)
-                                FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
-                                Type="@column.GetSfColumnType()"
-                                Context="columnContext">
-
-                        <Template>
-                            @column.Template((JToken)columnContext)
-                        </Template>
-
-                        <FilterTemplate>
-                            @column.FilterTemplate
-                        </FilterTemplate>
-                    </GridColumn>
-                }
-                else if (column.Template is not null)
-                {
-                    <GridColumn Field="@column.Field"
-                                HeaderText="@TranslateLabel(column)"
-                                TextAlign="@column.TextAlign"
-                                Width="@column.Width"
-                                Format="@column.Format"
-                                Type="@column.GetSfColumnType()"
-                                AllowFiltering=@(column.HasHeaderFilter)
-                                FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
-                                Context="columnContext">
-                        <Template>
-                            @column.Template((JToken)columnContext)
-                        </Template>
-                    </GridColumn>
-                }
-                else if (column.FilterTemplate is not null)
-                {
-                    <GridColumn Field="@column.Field"
-                                HeaderText="@TranslateLabel(column)"
-                                TextAlign="@column.TextAlign"
-                                Width="@column.Width"
-                                Format="@column.Format"
-                                AllowFiltering=@(column.HasHeaderFilter)
-                                FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
-                                Type="@column.GetSfColumnType()">
-
-                        <FilterTemplate>
-                            @column.FilterTemplate
-                        </FilterTemplate>
-                    </GridColumn>
-                }
-                else
-                {
-                    <GridColumn Field="@column.Field"
-                                HeaderText="@TranslateLabel(column)"
-                                TextAlign="@column.TextAlign"
-                                Format="@column.Format"
-                                Width="@column.Width"
-                                AllowFiltering=@(column.HasHeaderFilter)
-                                FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
-                                Type="@column.GetSfColumnType()">
-                    </GridColumn>
-                }
+                <GridInfiniteScrollSettings EnableCache=@(Options!.VirtualizationOptions!.EnableCache ?? false)
+                                            InitialBlocks=@(Options!.VirtualizationOptions!.InitialBlocksToLoad ?? 3)
+                                            MaximumBlocks=@(Options!.VirtualizationOptions!.MaximumBlocksToRender ?? 3) />
             }
-        </GridColumns>
-    </DynamicSfGridContainer>
 
+            @if(TableUiSchema?.InitialOrdering is not null)
+            {
+                <GridSortSettings>
+                    <GridSortColumns>
+                        <GridSortColumn Direction="@(GetInitialSortDirection())" Field="@(GetInitialOrderingFieldName())" />
+                    </GridSortColumns>
+                </GridSortSettings>
+            }
+
+            @if(Options?.PageSize is not null)
+            {
+                <GridPageSettings PageSize="@(Options.PageSize.Value)" />
+            }
+
+            <SfDataManager AdaptorInstance="@(CustomDataAdaptorType)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+
+            @if (ToolbarItems.Any())
+            {
+                <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="JToken"></GridEvents>
+            }
+
+            <GridColumns>
+                @foreach (var column in columns)
+                {
+                    @if (column.Template is not null && column.FilterTemplate is not null)
+                    {
+                        <GridColumn Field="@column.Field"
+                                    HeaderText="@TranslateLabel(column)"
+                                    TextAlign="@column.TextAlign"
+                                    AllowSorting=@column.Sortable
+                                    Width="@column.Width"
+                                    Format="@column.Format"
+                                    AllowFiltering=@(column.HasHeaderFilter)
+                                    FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                    Context="columnContext">
+
+                            <Template>
+                                @column.Template((JToken)columnContext)
+                            </Template>
+
+                            <FilterTemplate>
+                                @column.FilterTemplate
+                            </FilterTemplate>
+                        </GridColumn>
+                    }
+                    else if (column.Template is not null)
+                    {
+                        <GridColumn Field="@column.Field"
+                                    HeaderText="@TranslateLabel(column)"
+                                    TextAlign="@column.TextAlign"
+                                    Width="@column.Width"
+                                    Format="@column.Format"
+                                    Type="@column.GetSfColumnType()"
+                                    AllowFiltering=@(column.HasHeaderFilter)
+                                    FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                    Context="columnContext">
+                            <Template>
+                                @column.Template((JToken)columnContext)
+                            </Template>
+                        </GridColumn>
+                    }
+                    else if (column.FilterTemplate is not null)
+                    {
+                        <GridColumn Field="@column.Field"
+                                    HeaderText="@TranslateLabel(column)"
+                                    TextAlign="@column.TextAlign"
+                                    Width="@column.Width"
+                                    Format="@column.Format"
+                                    AllowFiltering=@(column.HasHeaderFilter)
+                                    FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                    Type="@column.GetSfColumnType()">
+
+                            <FilterTemplate>
+                                @column.FilterTemplate
+                            </FilterTemplate>
+                        </GridColumn>
+                    }
+                    else
+                    {
+                        <GridColumn Field="@column.Field"
+                                    HeaderText="@TranslateLabel(column)"
+                                    TextAlign="@column.TextAlign"
+                                    Format="@column.Format"
+                                    Width="@column.Width"
+                                    AllowFiltering=@(column.HasHeaderFilter)
+                                    FilterSettings="@(new FilterSettings(){ Operator = column.FilterOperator })"
+                                    Type="@column.GetSfColumnType()">
+                        </GridColumn>
+                    }
+                }
+            </GridColumns>
+        </DynamicSfGridContainer>
+
+    </CascadingValue>
 </CascadingValue>
 
 @code {
@@ -99,7 +118,7 @@
 
     [Inject] ITableUiSchemaInterpreter Interpreter { get; set; } = default!;
 
-    [Inject] DynamicColumnBuilder DynamicColumnBuilder { get; set; } = default!;
+    [Inject] IDynamicColumnBuilder DynamicColumnBuilder { get; set; } = default!;
 
     [Parameter]
     public Type CustomDataAdaptorType { get; set; } = typeof(JTokenDataAdaptor);
@@ -117,13 +136,35 @@
     public JSchema ItemsJsonSchema { get; set; } = default!;
 
     [Parameter]
-    public bool AllowPaging { get; set; } = false;
+    public DynamicGridOptions Options { get; set; } = DynamicGridOptions.Default;
 
-    [Parameter]
-    public bool EnableVirtualization { get; set; } = true;
+    bool ShouldRenderInfiniteScrollingSettings()
+    {
+        if (!Options.EnableVirtualization || Options.VirtualizationOptions is null)
+            return false;
 
-    [Parameter]
-    public bool EnableVirtualMaskRow { get; set; } = true;
+        var virtualizationOptions = Options.VirtualizationOptions;
+
+        return virtualizationOptions.InitialBlocksToLoad is not null
+            || virtualizationOptions.MaximumBlocksToRender is not null
+            || virtualizationOptions.EnableCache is not null;
+    }
+
+    SortDirection GetInitialSortDirection()
+    {
+        return Enum.Parse<SortDirection>(
+            $"{TableUiSchema?.InitialOrdering?.Direction}",
+            true
+        );
+    }
+
+    string GetInitialOrderingFieldName()
+    {
+        var jsonPath = JsonPathInterpreter
+            .FromElementScope(TableUiSchema!.InitialOrdering!.Scope);
+
+        return JsonPathInterpreter.FromSchemaPath(jsonPath);
+    }
 
 
     private ITableTranslationContext? tableTranslationContext;
@@ -170,7 +211,7 @@
         tableTranslationContext = new TableTranslationContext(JsonPathInterpreter);
         tableTranslationContext.Instantiate(TranslationSchema, ItemsJsonSchema);
 
-        if(TableUiSchema is not null)
+        if (TableUiSchema is not null)
         {
             columns = DynamicColumnBuilder.BuildDynamicColumns(TableUiSchema, ItemsJsonSchema);
         }

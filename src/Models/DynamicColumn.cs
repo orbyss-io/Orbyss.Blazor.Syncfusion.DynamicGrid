@@ -47,7 +47,7 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
 
         public RenderFragment? FilterTemplate { get; internal set; }
 
-        public bool IsEnumFilter => EnumConfiguration is not null;
+        public bool IsEnum => EnumConfiguration is not null;
 
         public DynamicColumnEnumConfiguration? EnumConfiguration { get; } = enumConfiguration;
 
@@ -63,7 +63,4 @@ namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
 
         public Operator? FilterOperator { get; } = filterOperator;
     }
-
-
-  
 }

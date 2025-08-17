@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
 {
     public sealed record TableColumns(
-        [property: JsonProperty, JsonPropertyName("globalLayout")] TableColumnItemLayout? GlobalLayout,        
+        [property: JsonProperty, JsonPropertyName("globalLayout")] TableColumnItemLayout? GlobalLayout,
         [property: JsonProperty, System.Text.Json.Serialization.JsonRequired, Newtonsoft.Json.JsonRequired, JsonPropertyName("items")] TableColumnItem[] Items
     );
 

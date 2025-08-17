@@ -1,97 +1,41 @@
 ﻿@page "/"
-@using Newtonsoft.Json.Schema
-@using Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
-@using Orbyss.Blazor.Syncfusion.DynamicGrid.Models
+@using Syncfusion.Blazor.DropDowns
+@using System.Globalization
 
 <h1>Dynamic Data Grid!</h1>
+<br/>
 
-@if(!string.IsNullOrWhiteSpace(error))
-{
-    <p style="color:red">@error</p>
-}
-
-else
-{
-    <label for="text-area-json-schema">
-        Paste your item schema here:
-    </label>
-
-    <p id="text-area-json-schema">
-        @jsonSchema
-    </p>
-
-    <label for="text-area-ui-schema">
-        Optionally, paste your UI schema here:
-    </label>
-
-    <InputTextArea @bind-Value=@uiSchemaJson id="text-area-ui-schema">
-    </InputTextArea>
-
-    <button class="btn-primary">Load Dynamic Grid</button> 
+<SfDropDownList DataSource="@Cultures" Placeholder="Select language.." TItem="string" TValue="string" Value=@(selectedCulture) ValueChanged="ChangeCulture">
+</SfDropDownList>
+<br/>
+<br/>
+<br/>
 
 
-    <br/>
-    <br />
-
-    if(itemsSchema is not null)
-    {
-        <Orbyss.Blazor.Syncfusion.DynamicGrid.DynamicSfGrid ItemsJsonSchema="@itemsSchema" TableUiSchema="@uiSchema" />
-    }
-}
+<DynamicSfGrid 
+    ItemsJsonSchema="@ExampleConstants.JsonSchema" 
+    TableUiSchema="@ExampleConstants.TableUiSchema" 
+    TranslationSchema="@ExampleConstants.TranslationSchema" />
 
 @code{
-    TableUiSchema? uiSchema;
-    JSchema? itemsSchema;
-
-    string? error;
-
-    const string jsonSchema = @"
+    List<string> Cultures = new List<string>
     {
-        ""properties"":{
-            ""firstName"": {
-                ""type"": ""string""
-            },
-            ""surname"": {
-                ""type"": ""string""
-            },
-            ""dateOfBirth"": {
-                ""type"": ""string"",
-                ""format"": ""date""
-            },
-            ""status"": {
-                ""type"": ""string"",
-                ""enum"": [
-                    ""Pending"",
-                    ""Accepted"",
-                    ""Rejected""
-                ]
-            }
-        }
+        "en-US",
+        "nl-NL"
+    };
+
+    string? selectedCulture;
+
+    protected override void OnInitialized()
+    {
+        selectedCulture = Cultures[0];
+        base.OnInitialized();
     }
-    ";
 
-
-    string uiSchemaJson = "";
-
-    void Load()
+    void ChangeCulture(string value)
     {
-        try
-        {
-            itemsSchema = JSchema.Parse(jsonSchema);
-            if(!string.IsNullOrWhiteSpace(uiSchemaJson))
-            {
-                uiSchema = DefaultJsonConverter.Deserialize<TableUiSchema>(uiSchemaJson);                
-            }
-            else
-            {
-                uiSchema = null;
-            }
-        }
-        catch(Exception e)
-        {
-            error = e.Message;   
-        }
-
+        DynamicGridCulture.Instance = new CultureInfo(value);
+        selectedCulture = DynamicGridCulture.Instance.Name;
         InvokeAsync(StateHasChanged);
     }
 }
