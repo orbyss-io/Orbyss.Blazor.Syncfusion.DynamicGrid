@@ -1,11 +1,50 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+
+		<Title>Orbyss Blazor Syncfusion DynamicGrid</Title>
+		<PackageId>Orbyss.Blazor.Syncfusion.DynamicGrid</PackageId>
+		<Version>1.0.0</Version>
+
+		<Authors>Orbyss.io</Authors>
+		<Company>Orbyss</Company>
+		<Copyright>© 2025 Orbyss.io</Copyright>
+
+		<Description>
+			Schema-driven Dynamic Data Grid for Syncfusion Blazor SfGrid.
+			Generates columns and behavior from JSON-based schemas (Items JSON Schema, Table UI Schema, Translation Schema).
+			Configure filters, widths, alignment, initial ordering, and localization via schema.
+			Supports paging/virtualization and custom data retrieval through DataAdaptor (incl. JTokenDataAdaptor + IDynamicGridDataProvider).
+		</Description>
+
+		<PackageTags>
+			blazor;syncfusion;sfgrid;grid;datagrid;dynamic;schema;jsonschema;uischema;translations;i18n;localization;filtering;sorting;paging;virtualization;dataadaptor
+		</PackageTags>
+
+		<RepositoryUrl>https://github.com/orbyss-io/Orbyss.Blazor.Syncfusion.DynamicGrid</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageProjectUrl>https://github.com/orbyss-io/Orbyss.Blazor.Syncfusion.DynamicGrid</PackageProjectUrl>
+
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>icon.png</PackageIcon>
+
+		<PackageReleaseNotes>
+			**Release: 17 August, 2025**
+
+			First release of Orbyss.Blazor.Syncfusion.DynamicGrid.
+			- Generate SfGrid from JSON schemas (Items, Table UI, Translation)
+			- Column definitions, filters, widths, alignment, initial ordering via schema
+			- Culture-aware labels and values (i18n)
+			- Paging and virtualization options via DynamicGridOptions
+			- JTokenDataAdaptor included; implement IDynamicGridDataProvider for custom sources
+
+			Not all SfGrid features are wrapped yet—please open issues or PRs to help expand coverage.
+		</PackageReleaseNotes>
+	</PropertyGroup>
 
 
 	<ItemGroup>
@@ -15,13 +54,19 @@
 		<SupportedPlatform Include="macOs" />
 	</ItemGroup>
 
-  <ItemGroup>
-	  <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.18" />
-	  <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
-	  <PackageReference Include="Orbyss.Components.Json.Models" Version="1.0.1" />
-	  <PackageReference Include="Syncfusion.Blazor.Grid" Version="30.2.5" />
-	  <PackageReference Include="Syncfusion.Blazor.Inputs" Version="30.2.5" />
-	  <PackageReference Include="Syncfusion.Blazor.Themes" Version="30.2.5" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+		<None Include="icon.png" Pack="true" PackagePath="" />
+		<None Include="LICENSE" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.18" />
+		<PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
+		<PackageReference Include="Orbyss.Components.Json.Models" Version="1.0.1" />
+		<PackageReference Include="Syncfusion.Blazor.Grid" Version="30.2.5" />
+		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="30.2.5" />
+		<PackageReference Include="Syncfusion.Blazor.Themes" Version="30.2.5" />
+	</ItemGroup>
 
 </Project>
