@@ -1,7 +1,6 @@
-﻿namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models
+﻿namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Models;
+
+public sealed class DynamicColumnAdditionalConfiguration(bool renderBooleanAsCheckbox = false)
 {
-    public sealed class DynamicColumnAdditionalConfiguration(bool renderBooleanAsCheckbox = false)
-    {
-        public bool RenderBooleanAsCheckbox { get; } = renderBooleanAsCheckbox;
-    }
+    public bool RenderBooleanAsCheckbox { get; } = renderBooleanAsCheckbox;
 }

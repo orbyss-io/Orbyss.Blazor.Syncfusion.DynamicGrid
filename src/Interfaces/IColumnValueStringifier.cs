@@ -1,10 +1,9 @@
 ﻿using Newtonsoft.Json.Linq;
 using Orbyss.Blazor.Syncfusion.DynamicGrid.Models;
 
-namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interfaces
+namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interfaces;
+
+public interface IColumnValueStringifier
 {
-    public interface IColumnValueStringifier
-    {
-        string StringifyColumn(DynamicColumn column, JToken rowToken);
-    }
+    string StringifyColumn(DynamicColumn column, JToken rowToken);
 }

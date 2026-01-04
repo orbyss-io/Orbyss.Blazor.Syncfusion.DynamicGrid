@@ -1,12 +1,11 @@
 ﻿using Newtonsoft.Json.Schema;
 using Orbyss.Blazor.Syncfusion.DynamicGrid.Models;
 
-namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interfaces
-{
-    public interface IDynamicColumnBuilder
-    {
-        DynamicColumn[] BuildDynamicColumns(JSchema itemsJsonSchema);
+namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interfaces;
 
-        DynamicColumn[] BuildDynamicColumns(TableUiSchema tableUiSchema, JSchema itemsJsonSchema);
-    }
+public interface IDynamicColumnBuilder
+{
+    DynamicColumn[] BuildDynamicColumns(JSchema itemsJsonSchema);
+
+    DynamicColumn[] BuildDynamicColumns(TableUiSchema tableUiSchema, JSchema itemsJsonSchema);
 }

@@ -1,19 +1,18 @@
-﻿namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation
+﻿namespace Orbyss.Blazor.Syncfusion.DynamicGrid.Interpretation;
+
+public enum TableColumnType
 {
-    public enum TableColumnType
-    {
-        Text,
-        TextList,
-        Number,
-        NumberList,
-        Integer,
-        IntegerList,
-        Enum,
-        EnumList,
-        Boolean,
-        DateTime,
-        DateOnly,
-        DateTimeTicks,
-        DateOnlyTicks
-    }
+    Text,
+    TextList,
+    Number,
+    NumberList,
+    Integer,
+    IntegerList,
+    Enum,
+    EnumList,
+    Boolean,
+    DateTime,
+    DateOnly,
+    DateTimeTicks,
+    DateOnlyTicks
 }

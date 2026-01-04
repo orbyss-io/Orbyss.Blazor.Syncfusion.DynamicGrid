@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 
 		<Title>Orbyss Blazor Syncfusion DynamicGrid</Title>
 		<PackageId>Orbyss.Blazor.Syncfusion.DynamicGrid</PackageId>
-		<Version>1.0.0</Version>
+		<Version>1.1.0</Version>
 
 		<Authors>Orbyss.io</Authors>
 		<Company>Orbyss</Company>
@@ -61,12 +61,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.18" />
 		<PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
-		<PackageReference Include="Orbyss.Components.Json.Models" Version="1.0.1" />
-		<PackageReference Include="Syncfusion.Blazor.Grid" Version="30.2.5" />
-		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="30.2.5" />
-		<PackageReference Include="Syncfusion.Blazor.Themes" Version="30.2.5" />
+		<PackageReference Include="Orbyss.Components.Json.Models" Version="1.1.2" />
+		<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.21" />
+		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.21" />
+		<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.21" />
 	</ItemGroup>
 
 </Project>
