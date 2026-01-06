@@ -29,6 +29,23 @@ In `wwwroot/index.html`:
 <link href="_content/Syncfusion.Blazor.Themes/tailwind.css" rel="stylesheet" />
 <script src="_content/Syncfusion.Blazor.Core/scripts/syncfusion-blazor.min.js" type="text/javascript"></script>
 ```
+#### Syncfusion dependency
+
+This library uses Syncfusion Blazor components internally. This package is built and tested against Syncfusion.Blazor 32.1.x.
+
+#### Recommended (simplest)
+Reference the Syncfusion Blazor bundle in .csproj. This includes all required Syncfusion components:
+```xml
+<PackageReference Include="Syncfusion.Blazor" Version="32.1.*" />
+```
+
+#### Advanced usage
+If you prefer per-component packages, reference the required ones instead:
+```xml
+<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.22" />
+<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.22" />
+<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.22" />
+```
 
 ### 2. Register Services
 
