@@ -62,10 +62,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
-		<PackageReference Include="Orbyss.Components.Json.Models" Version="1.1.2" />
-		<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.22" />
-		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.22" />
-		<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.22" />
+		<PackageReference Include="Orbyss.Components.Json.Models" Version="1.1.2" PrivateAssets="all" />
+		<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.22" PrivateAssets="all"/>
+		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.22" PrivateAssets="all"/>
+		<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.22" PrivateAssets="all"/>
 	</ItemGroup>
 
 </Project>
