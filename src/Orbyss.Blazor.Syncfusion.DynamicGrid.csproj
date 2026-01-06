@@ -7,7 +7,7 @@
 
 		<Title>Orbyss Blazor Syncfusion DynamicGrid</Title>
 		<PackageId>Orbyss.Blazor.Syncfusion.DynamicGrid</PackageId>
-		<Version>1.1.0</Version>
+		<Version>1.1.1</Version>
 
 		<Authors>Orbyss.io</Authors>
 		<Company>Orbyss</Company>
@@ -63,9 +63,9 @@
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
 		<PackageReference Include="Orbyss.Components.Json.Models" Version="1.1.2" />
-		<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.21" />
-		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.21" />
-		<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.21" />
+		<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.22" />
+		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.22" />
+		<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.22" />
 	</ItemGroup>
 
 </Project>
