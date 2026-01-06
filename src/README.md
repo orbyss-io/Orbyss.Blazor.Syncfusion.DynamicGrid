@@ -40,9 +40,9 @@ Reference the Syncfusion Blazor bundle in .csproj. This includes all required Sy
 #### Advanced usage
 If you prefer per-component packages, reference the required ones instead:
 ```xml
-<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.22" />
-<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.22" />
-<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.22" />
+<PackageReference Include="Syncfusion.Blazor.Grid" Version="32.1.*" />
+<PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.*" />
+<PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.*" />
 ```
 
 ### 2. Register Services
